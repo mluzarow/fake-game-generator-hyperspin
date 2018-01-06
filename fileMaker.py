@@ -16,22 +16,17 @@ class OutputFile:
 		self.name.translate (trans)
 
 def modify_file_crc32(path, newcrc):
-	with open(path, "r+b") as raf:
+	with open(path, "r+b") as f:
 		delta = multiply_mod(0xCBF1ACDA, (0x38FB2284 ^ newcrc))
 		
-		bytes4 = bytearray ([0x00, 0x00, 0x00, 0x00])
-		
+		newData = bytearray(4)
 		for i in range(4):
-			bytes4[i] ^= (reverse32(delta) >> (i * 8)) & 0xFF
+			newData[i] = (reverse32(delta) >> (i * 8)) & 0xff
 		
-		raf.seek(0)
-		raf.write(bytes4)
+		f.seek(0)
+		f.write(newData)
 		
-		# Recheck entire file
-		if get_crc32(raf) != newcrc:
-			raise AssertionError("Failed to update CRC-32 to desired value")
-		else:
-			print("New CRC-32: {:08X}".format(reverse32(get_crc32(raf))))
+		print("New CRC-32: {:08X}".format(reverse32(get_crc32(f))))
 
 def get_crc32(raf):
 	raf.seek(0)
