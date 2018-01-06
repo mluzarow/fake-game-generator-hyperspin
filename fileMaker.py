@@ -9,7 +9,11 @@ from string import maketrans
 class OutputFile:
 	def __init__ (self, name, crc):
 		self.name = name
-		self.crc = crc
+		
+		if ((crc != None) and (crc != '')):
+			self.crc = int (crc, 16)
+		else:
+			self.crc = None
 	
 	def sanitize (self):
 		trans = maketrans ('\/:?"<>|', '        ')
@@ -57,9 +61,7 @@ def multiply_mod(x, y):
 	return z
 
 def fakeCRC (gameFile, root):
-	targetCRC = int (gameFile.crc, 16)
-	
-	targetCRC = reverse32(targetCRC)
+	targetCRC = reverse32 (gameFile.crc)
 
 	modify_file_crc32("%s/%s.txt" % (root, gameFile.name), targetCRC)
 
