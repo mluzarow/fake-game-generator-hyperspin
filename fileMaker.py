@@ -90,3 +90,4 @@ for XMLfileName in files:
 	
 	dumpFakeFiles (games, XMLfileName[0:-4])
 
+print ("Processing complete.")
