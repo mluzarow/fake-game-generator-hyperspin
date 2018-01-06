@@ -15,14 +15,13 @@ class OutputFile:
 		trans = maketrans ('\/:?"<>|', '        ')
 		self.name.translate (trans)
 
-def modify_file_crc32(path, newcrc, printstatus=False):
+def modify_file_crc32(path, newcrc):
 	with open(path, "r+b") as raf:
 		raf.seek(0, os.SEEK_END)
 		
 		# Read entire file and calculate original CRC-32 value
 		crc = get_crc32(raf)
-		if printstatus:
-			print("Original CRC-32: {:08X}".format(reverse32(crc)))
+		print("Original CRC-32: {:08X}".format(reverse32(crc)))
 		
 		# Compute the change to make
 		delta = crc ^ newcrc
@@ -37,13 +36,12 @@ def modify_file_crc32(path, newcrc, printstatus=False):
 			bytes4[i] ^= (reverse32(delta) >> (i * 8)) & 0xFF
 		raf.seek(0)
 		raf.write(bytes4)
-		if printstatus:
-			print("Computed and wrote patch")
+		print("Computed and wrote patch")
 		
 		# Recheck entire file
 		if get_crc32(raf) != newcrc:
 			raise AssertionError("Failed to update CRC-32 to desired value")
-		elif printstatus:
+		else:
 			print("New CRC-32: {:08X}".format(reverse32(get_crc32(raf))))
 			print("New CRC-32 successfully verified")
 
@@ -75,51 +73,6 @@ def multiply_mod(x, y):
 			x ^= POLYNOMIAL
 	return z
 
-# def pow_mod(x, y):
-# 	# Exponentiation by squaring
-# 	z = 1
-# 	while y != 0:
-# 		if y & 1 != 0:
-# 			z = multiply_mod(z, x)
-# 		x = multiply_mod(x, x)
-# 		y >>= 1
-# 	return z
-
-# def divide_and_remainder(x, y):
-# 	if y == 0:
-# 		raise ValueError("Division by zero")
-# 	if x == 0:
-# 		return (0, 0)
-# 
-# 	ydeg = get_degree(y)
-# 	z = 0
-# 	for i in range(get_degree(x) - ydeg, -1, -1):
-# 		if (x >> (i + ydeg)) & 1 != 0:
-# 			x ^= y << i
-# 			z |= 1 << i
-# 	return (z, x)
-
-# def reciprocal_mod(x):
-# 	# Based on a simplification of the extended Euclidean algorithm
-# 	y = x
-# 	x = POLYNOMIAL
-# 	a = 0
-# 	b = 1
-# 	while y != 0:
-# 		q, r = divide_and_remainder(x, y)
-# 		c = a ^ multiply_mod(q, b)
-# 		x = y
-# 		y = r
-# 		a = b
-# 		b = c
-# 	if x == 1:
-# 		return a
-# 	else:
-# 		raise ValueError("Reciprocal does not exist")
-
-# def get_degree(x):
-# 	return x.bit_length() - 1
-
 def fakeCRC (gameFile, root):
 	targetCRC = int (gameFile.crc, 16)
 	
@@ -128,7 +81,7 @@ def fakeCRC (gameFile, root):
 	
 	targetCRC = reverse32(targetCRC)
 
-	modify_file_crc32("%s/%s.txt" % (root, gameFile.name), targetCRC, True)
+	modify_file_crc32("%s/%s.txt" % (root, gameFile.name), targetCRC)
 
 def dumpFakeFiles (nameList, root):
 	makedirs (root)
