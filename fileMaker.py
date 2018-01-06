@@ -19,19 +19,6 @@ class OutputFile:
 		trans = maketrans ('\/:?"<>|', '        ')
 		self.name.translate (trans)
 
-def modify_file_crc32(path, newcrc):
-	with open(path, "r+b") as f:
-		delta = multiply_mod(0xCBF1ACDA, (0x38FB2284 ^ newcrc))
-		
-		newData = bytearray(4)
-		for i in range(4):
-			newData[i] = (reverse32(delta) >> (i * 8)) & 0xff
-		
-		f.seek(0)
-		f.write(newData)
-		
-		print("New CRC-32: {:08X}".format(reverse32(get_crc32(f))))
-
 def get_crc32(raf):
 	raf.seek(0)
 	crc = 0
@@ -50,7 +37,6 @@ def reverse32(x):
 	return y
 	
 def multiply_mod(x, y):
-	# Russian peasant multiplication algorithm
 	z = 0
 	while y != 0:
 		z ^= x * (y & 1)
@@ -62,8 +48,19 @@ def multiply_mod(x, y):
 
 def fakeCRC (gameFile, root):
 	targetCRC = reverse32 (gameFile.crc)
-
-	modify_file_crc32("%s/%s.txt" % (root, gameFile.name), targetCRC)
+	path = "%s/%s.txt" % (root, gameFile.name)
+	
+	with open(path, "r+b") as f:
+		delta = multiply_mod(0xCBF1ACDA, (0x38FB2284 ^ targetCRC))
+		
+		newData = bytearray(4)
+		for i in range(4):
+			newData[i] = (reverse32(delta) >> (i * 8)) & 0xff
+		
+		f.seek(0)
+		f.write(newData)
+		
+		print("New CRC-32: {:08X}".format(reverse32(get_crc32(f))))
 
 def dumpFakeFiles (nameList, root):
 	makedirs (root)
