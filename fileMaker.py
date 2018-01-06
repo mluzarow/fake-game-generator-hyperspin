@@ -1,6 +1,5 @@
 # Python 2.7.8
 
-import os, sys, zlib
 from os import listdir, makedirs
 from os.path import isfile, join
 from bs4 import BeautifulSoup
@@ -18,23 +17,6 @@ class OutputFile:
 	def sanitize (self):
 		trans = maketrans ('\/:?"<>|', '        ')
 		self.name.translate (trans)
-
-def get_crc32(raf):
-	raf.seek(0)
-	crc = 0
-	while True:
-		buffer = raf.read(128 * 1024)
-		if len(buffer) == 0:
-			return reverse32(crc & 0xffffffff)
-		else:
-			crc = zlib.crc32(buffer, crc)
-
-def reverse32(x):
-	y = 0
-	for i in range(32):
-		y = (y << 1) | (x & 1)
-		x >>= 1
-	return y
 	
 def multiply_mod(x, y):
 	z = 0
@@ -45,6 +27,13 @@ def multiply_mod(x, y):
 		if (x >> 32) & 1 != 0:
 			x ^= 0x104C11DB7
 	return z
+
+def reverse32(x):
+	y = 0
+	for i in range(32):
+		y = (y << 1) | (x & 1)
+		x >>= 1
+	return y
 
 def fakeCRC (gameFile, root):
 	targetCRC = reverse32 (gameFile.crc)
@@ -59,8 +48,6 @@ def fakeCRC (gameFile, root):
 		
 		f.seek(0)
 		f.write(newData)
-		
-		print("New CRC-32: {:08X}".format(reverse32(get_crc32(f))))
 
 def dumpFakeFiles (nameList, root):
 	makedirs (root)
