@@ -17,33 +17,21 @@ class OutputFile:
 
 def modify_file_crc32(path, newcrc):
 	with open(path, "r+b") as raf:
-		raf.seek(0, os.SEEK_END)
+		delta = multiply_mod(0xCBF1ACDA, (0x38FB2284 ^ newcrc))
 		
-		# Read entire file and calculate original CRC-32 value
-		crc = get_crc32(raf)
-		print("Original CRC-32: {:08X}".format(reverse32(crc)))
+		bytes4 = bytearray ([0x00, 0x00, 0x00, 0x00])
 		
-		# Compute the change to make
-		delta = crc ^ newcrc
-		delta = multiply_mod(0xCBF1ACDA, delta)
-		
-		# Patch 4 bytes in the file
-		raf.seek(0)
-		bytes4 = bytearray(raf.read(4))
-		if len(bytes4) != 4:
-			raise IOError("Cannot read 4 bytes at offset")
 		for i in range(4):
 			bytes4[i] ^= (reverse32(delta) >> (i * 8)) & 0xFF
+		
 		raf.seek(0)
 		raf.write(bytes4)
-		print("Computed and wrote patch")
 		
 		# Recheck entire file
 		if get_crc32(raf) != newcrc:
 			raise AssertionError("Failed to update CRC-32 to desired value")
 		else:
 			print("New CRC-32: {:08X}".format(reverse32(get_crc32(raf))))
-			print("New CRC-32 successfully verified")
 
 def get_crc32(raf):
 	raf.seek(0)
@@ -51,7 +39,7 @@ def get_crc32(raf):
 	while True:
 		buffer = raf.read(128 * 1024)
 		if len(buffer) == 0:
-			return reverse32(crc & MASK)
+			return reverse32(crc & 0xffffffff)
 		else:
 			crc = zlib.crc32(buffer, crc)
 
@@ -70,14 +58,11 @@ def multiply_mod(x, y):
 		y >>= 1
 		x <<= 1
 		if (x >> 32) & 1 != 0:
-			x ^= POLYNOMIAL
+			x ^= 0x104C11DB7
 	return z
 
 def fakeCRC (gameFile, root):
 	targetCRC = int (gameFile.crc, 16)
-	
-	if targetCRC & MASK != targetCRC:
-		return "Error: Invalid new CRC-32 value"
 	
 	targetCRC = reverse32(targetCRC)
 
@@ -103,9 +88,6 @@ def readXML (path):
 
 def getFileList (path):
 	return [item for item in listdir(path) if isfile(join(path, item))]
-
-POLYNOMIAL = 0x104C11DB7
-MASK = (1 << 32) - 1
 
 path = raw_input ("Path to XMLs: ")
 
